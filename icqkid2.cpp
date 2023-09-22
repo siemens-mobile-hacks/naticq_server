@@ -28,6 +28,7 @@
  #include <netinet/in.h>
  #include <errno.h>
  #include <stdlib.h>
+ #include <unistd.h>
 #endif
 
 #include <iostream>
@@ -1110,7 +1111,7 @@ bool ICQKid2::addContact(string uin, string nick, string groupname, uint16_t * r
   return false;
   }
  
- if (retflag!=SSI_EDIT_OK) return false;
+ if (*retflag!=SSI_EDIT_OK) return false;
  return true;
 }
 
@@ -1184,7 +1185,7 @@ bool ICQKid2::removeContact(string uin, uint16_t * retflag)
   return false;
   }
  
- if (retflag!=SSI_EDIT_OK) return false;
+ if (*retflag!=SSI_EDIT_OK) return false;
  return true;
 }
 
@@ -1386,7 +1387,7 @@ bool ICQKid2::renameContact(string uin, string nick, uint16_t * retflag)
   return false;
   }
  
- if (retflag!=SSI_EDIT_OK) return false;
+ if (*retflag!=SSI_EDIT_OK) return false;
  return true;
 }
 
@@ -2781,7 +2782,7 @@ bool ICQKid2::waitHello(void)
 // ----------------=========ooooOOOOOOOOOoooo=========----------------
 static string CalcPass(string s)
 {
-  static const char pxor[]={0xF3,0x26,0x81,0xC4,0x39,0x86,0xDB,0x92,
+  static const unsigned char pxor[]={0xF3,0x26,0x81,0xC4,0x39,0x86,0xDB,0x92,
     0x71, 0xA3, 0xB9, 0xE6, 0x53, 0x7A, 0x95, 0x7C};
   string r="";
   char c;
@@ -3469,7 +3470,7 @@ bool ICQKid2::parseAuthReply(string & from, string & text, uint8_t & aflag, vect
 }
 
 // ----------------=========ooooOOOOOOOOOoooo=========----------------
-bool ICQKid2::parseOnlineNotify(string & uin, uint32_t & stat, vector<uint8_t> & data, vector<uint8_t> & xs, uint8_t & clientid){
+bool ICQKid2::parseOnlineNotify(string & uin, uint32_t & stat, vector<uint8_t> & data, vector<uint8_t> & xs, uint8_t & clientid){
  size_t curr_pos=0;
 
  if (data.empty()) return false;
@@ -3961,7 +3962,7 @@ bool ICQKid2::getOfflMsg(SNACData & snd)
 
   TLVField tlv;
   if (!tlv.decode_from(snd.data, 0)) return false;
-  if (tlv.type!=1) return false; //√Û‡ÌÓ Í‡ÍÓÂ-ÚÓ ;)
+  if (tlv.type!=1) return false; //—Ü–°–Æ–ú–ù –ô–Æ–ô–ù–ï-–†–ù ;)
   if (tlv.data.size()<10) return false;
 
   uint16_t offl_type;
@@ -4724,7 +4725,7 @@ int ICQKid2::pollIncomingEvents(int tmout)
          break;
     }
    }
-   onIncomingAutoStatusMsg(msg, type); //¬˚Á˚‚‡ÂÏ ‚ Î˛·ÓÏ ÒÎÛ˜‡Â ;)
+   onIncomingAutoStatusMsg(msg, type); //–±–®–ì–®–ë–Æ–ï–õ –ë –ö–ß–ê–ù–õ –Ø–ö–°–í–Æ–ï ;)
   }
  else if (snd.service_id==0x0013 && snd.subtype_id==0x0019) // Authorize request
   {
@@ -5013,7 +5014,7 @@ bool ICQKid2::haveXtrazCapability(vector<uint8_t> & data, vector<uint8_t> &xs)
 {
  bool r=false;
  size_t caps_num=data.size()/16;
- xs.clear(); //ÕÂÚ ËÍÒ‡
+ xs.clear(); //–º–ï–† –•–ô–Ø–Æ
  for (size_t i=0; i<caps_num; ++i)
   for (size_t j=0; j<X_STATUS_MAX_BOUND; ++j)
    if (memcmp(&data[i*16], XStatus_arr[j], 16)==0)

@@ -25,6 +25,8 @@
 	#include <sys/ioctl.h>
 	#include <errno.h>
 	#include <stdlib.h>
+	#include <unistd.h>
+
 
 	/* Простые переименования и дополненьица */
 	#define O_BINARY 0
@@ -202,9 +204,9 @@ unsigned int char16to8(unsigned int c)
   typedef struct
   {
    unsigned short u;
-   char dos;
-   char win;
-   char koi8;
+   unsigned char dos;
+   unsigned char win;
+   unsigned char koi8;
   } TUNICODE2CHAR;
   static const TUNICODE2CHAR unicode2char[]=
   {
@@ -758,7 +760,7 @@ int main(int argc, char* argv[])
 	  }
 
 	/* Биндим сокет */
-	if(bind(listen_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+	if(::bind(listen_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
 	  printf("bind() failed with error: %i\n", errno);
 	  return -1;
 	}

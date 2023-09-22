@@ -2,7 +2,7 @@ APP=ig11
 SRCS=statgen.cpp md5.cpp snaccache.cpp main_freebsd.cpp flap.cpp icqkid2.cpp
 OBJS=${SRCS:.cpp=.o}
 
-CC=g++
+CC=clang++
 CXXFLAGS=-O2 -DNDEBUG
 LDFLAGS= -pthread
 
