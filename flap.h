@@ -23,7 +23,8 @@
 
 #include <vector>
 #include <string>
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdlib>
 #include "common.h"
 
 using namespace std;
