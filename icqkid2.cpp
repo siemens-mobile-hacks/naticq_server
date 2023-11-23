@@ -115,7 +115,7 @@ ICQKid2::ICQKid2(void)
         : sock(-1), flap_seq_number(1), snac_seq_number(1), network_timeout(-1), \
           network_break_flag(false), connect_phase_percentage(0), \
           icons_service(NULL), online_status(STATUS_OFFLINE), xStatus(X_STATUS_NONE), \
-          myPrivSrvStatus(PRIV_ALL_CAN_SEE), myPrivSrvStatus_item_id(0)
+          myPrivSrvStatus(PRIV_ALL_CAN_SEE), myPrivSrvStatus_item_id(0), plain_text_auth(false)
 {
  snac_cache = new SnacCache;
  setProxy();
@@ -171,21 +171,26 @@ bool ICQKid2::doConnect(uint32_t astat)
  if (sock<0) return false;	//0
  connect_phase_percentage += 2;
 
- if (!waitHello()) { CLOSE_SOCK(sock); return false; }		//2
- connect_phase_percentage += 2;
-
- if (!sendSignOn0()) { CLOSE_SOCK(sock); return false; }	//4
- connect_phase_percentage += 2; //8; //2;
-
- if (!sendMD5saltrequest(&snac_sync)) { CLOSE_SOCK(sock); return false; }	//6
- connect_phase_percentage += 2;
-
- if (!getMD5salt(snac_sync, md5_salt)) { CLOSE_SOCK(sock); return false; }	//8
- connect_phase_percentage += 2;
-
- if (!sendMD5authorize(&snac_sync, md5_salt)) { CLOSE_SOCK(sock); return false; }	//10
- connect_phase_percentage += 2;
-
+ if (plain_text_auth) {
+  if (!waitHello()) { CLOSE_SOCK(sock); return false; }		//2
+  connect_phase_percentage += 2;
+  
+  if (!sendPlainTextAuth(&snac_sync)) { CLOSE_SOCK(sock); return false; }	//6
+  connect_phase_percentage += 2;
+ } else {
+  if (!sendSignOn0()) { CLOSE_SOCK(sock); return false; }	//4
+  connect_phase_percentage += 2; //8; //2;
+  
+  if (!sendMD5saltrequest(&snac_sync)) { CLOSE_SOCK(sock); return false; }	//6
+  connect_phase_percentage += 2;
+  
+  if (!getMD5salt(snac_sync, md5_salt)) { CLOSE_SOCK(sock); return false; }	//8
+  connect_phase_percentage += 2;
+  
+  if (!sendMD5authorize(&snac_sync, md5_salt)) { CLOSE_SOCK(sock); return false; }	//10
+  connect_phase_percentage += 2;
+ }
+ 
  if (!getBOSSparams(boss_host, boss_port, boss_cookie)) { CLOSE_SOCK(sock); return false; }	//12
  connect_phase_percentage += 2;
 
@@ -2827,6 +2832,34 @@ bool ICQKid2::sendSignOn0(void)
  return fp.send_to(sock);
 }
 
+bool ICQKid2::sendPlainTextAuth(uint32_t * snac_sync)
+{
+ FlapPacket fp;
+ fp.frame_type=FT_SIGNON;
+ fp.seq_number=flap_seq_number++;
+ fp.payload.resize(4);
+ fp.payload[3]=1;
+ 
+ string enc_password = mypassword;
+ 
+ static const uint8_t enc_key[] = {0xF3, 0x26, 0x81, 0xC4, 0x39, 0x86, 0xDB, 0x92, 0x71, 0xA3, 0xB9, 0xE6, 0x53, 0x7A, 0x95, 0x7C};
+ for (int i = 0; i < enc_password.size(); i++) {
+  enc_password[i] = enc_password[i] ^ enc_key[i % 16];
+ }
+ 
+ TLVPack tlv_pack;
+ tlv_pack.data.push_back(TLVField(myuin, TLV_UID));
+ tlv_pack.data.push_back(TLVField(enc_password, TLV_PWD));
+ vector<uint8_t> data_vec;
+ tlv_pack.encode_to(data_vec);
+ 
+ for (int i = 0; i < data_vec.size(); i++) {
+  fp.payload.push_back(data_vec[i]);
+ }
+ 
+ return fp.send_to(sock);
+}
+
 // ----------------=========ooooOOOOOOOOOoooo=========----------------
 bool ICQKid2::sendMD5saltrequest(uint32_t * snac_sync)
 {
@@ -2925,11 +2958,15 @@ bool ICQKid2::getBOSSparams(string & boss_host, int & boss_port, vector<uint8_t>
  }
  while(--t);
  if (!t) return false;
- if (fp.frame_type!=FT_DATA) return false;
+ if (fp.frame_type!=FT_DATA && !plain_text_auth) return false;
  SNACData snd;
- if (!snd.decode_from(fp.payload)) return false;
  TLVPack tlv_pack;
- if (!tlv_pack.decode_from(snd.data)) return false;
+ if (plain_text_auth) {
+  if (!tlv_pack.decode_from(fp.payload)) return false;
+ } else {
+  if (!snd.decode_from(fp.payload)) return false;
+  if (!tlv_pack.decode_from(snd.data)) return false;
+ }
  TLVField * err_tlv = tlv_pack.findTLV(0x0008);
  if (err_tlv!=NULL) // Packet contains error code
  {
