@@ -1034,39 +1034,22 @@ void *ServerThread(void *tParam)
             rpkt.data[rpkt.len]=0;
             miif.setPassword(rpkt.data);
             miif.md5auth=false;
+            miif.setPlainTextAuth(use_plain_text);
+            /*
             strcpy(rpkt.data,"Download new version!");
             rpkt.len=strlen(rpkt.data);
             rpkt.type=T_ERROR;
             miif.NatICQTX(&rpkt);
+            */
         }else{
-	    miif.md5auth=true;
+			miif.md5auth=true;
+			if (use_plain_text) {
+				strcpy(rpkt.data,"This server support only plain-text auth! Download right NatICQ version!");
+				rpkt.len=strlen(rpkt.data);
+				rpkt.type=T_ERROR;
+				miif.NatICQTX(&rpkt);
+			}
         }
-
-		if (use_plain_text) {
-			miif.setPlainTextAuth(true);
-			miif.md5auth=false;
-			
-			NatICQ_PKT pkt;
-			pkt.type=T_MD5AUTH;
-			pkt.len=0;
-			pkt.data[0]=0;
-			miif.NatICQTX(&pkt);
-			do {
-				if (NatICQRX(s,&pkt,60)<=0){
-					break;
-				}
-			} while(pkt.type!=T_MD5AUTH);
-			
-			static const char alphabet[] = "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890!@#$%^&*()_=-";
-			int alphabet_len = strlen(alphabet);
-			
-			char password[33];
-			for (int i = 0; i < 8; i++)
-				password[i] = alphabet[(uint8_t) pkt.data[i] % alphabet_len];
-			password[8] = 0;
-			
-			miif.setPassword(password);
-		}
 
         sprintf(rpkt.data,"%u",rpkt.uin);
 
