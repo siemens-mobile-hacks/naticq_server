@@ -1044,7 +1044,8 @@ void *ServerThread(void *tParam)
         }else{
 			miif.md5auth=true;
 			if (use_plain_text) {
-				strcpy(rpkt.data,"This server support only plain-text auth! Download right NatICQ version!");
+				strcpy(rpkt.data,"This server only supports plain-text auth! Download the right NatICQ version!");
+
 				rpkt.len=strlen(rpkt.data);
 				rpkt.type=T_ERROR;
 				miif.NatICQTX(&rpkt);
