@@ -250,6 +250,7 @@ class SNACData;
 class ICQKid2{
  public:
   string mypassword;
+  bool plain_text_auth;
   virtual void getMD5hash(vector<uint8_t> md5_salt, uint8_t * md5_hash);
   typedef enum
    {
@@ -265,6 +266,9 @@ class ICQKid2{
   void setUIN(string auin) { myuin=auin; }
   void setPassword(string apwd) { mypassword=apwd; }
   void setLoginHost(string ahost="login.icq.com", int aport=5190) { loginhost=ahost; loginport=aport; }
+  void setPlainTextAuth(bool flag) {
+   plain_text_auth = flag;
+  }
   void setProxy(string ahost="", int aport=0, string auid="", string apwd="", ProxyType apr_type=NONE)
    {
    proxy_host=ahost;
@@ -490,6 +494,7 @@ class ICQKid2{
   
   bool waitHello(void);
   bool sendSignOn0(void);
+  bool sendPlainTextAuth(uint32_t * snac_sync);
   bool sendMD5saltrequest(uint32_t * snac_sync);
   bool getMD5salt(uint32_t snac_sync, vector<uint8_t> & md5_salt);
   bool sendMD5authorize(uint32_t * snac_sync, vector<uint8_t> & md5_salt);

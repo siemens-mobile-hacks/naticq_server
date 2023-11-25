@@ -997,6 +997,19 @@ void *ServerThread(void *tParam)
 
         time_t naticq_timeout;
         MyIcqInterface miif;
+        
+        bool use_plain_text = false;
+        if (getenv("ICQ_PLAIN_TEXT")) {
+			use_plain_text = strcmp(getenv("ICQ_PLAIN_TEXT"), "1") == 0;
+		}
+        
+        if (getenv("ICQ_SERVER")) {
+			const char *server = getenv("ICQ_SERVER");
+			int port = atoi(getenv("ICQ_SERVER_PORT") ?: "5190");
+			DPRINTF("Using server %s:%d\n", server, port);
+			miif.setLoginHost(server, port);
+        }
+        
         miif.naticq_sock=s;
         miif.subIGId=__SVN_REVISION__;
         NatICQ_PKT rpkt;
@@ -1021,12 +1034,22 @@ void *ServerThread(void *tParam)
             rpkt.data[rpkt.len]=0;
             miif.setPassword(rpkt.data);
             miif.md5auth=false;
+            miif.setPlainTextAuth(use_plain_text);
+            /*
             strcpy(rpkt.data,"Download new version!");
             rpkt.len=strlen(rpkt.data);
             rpkt.type=T_ERROR;
             miif.NatICQTX(&rpkt);
+            */
         }else{
-	    miif.md5auth=true;
+			miif.md5auth=true;
+			if (use_plain_text) {
+				strcpy(rpkt.data,"This server only supports plain-text auth! Download the right NatICQ version!");
+
+				rpkt.len=strlen(rpkt.data);
+				rpkt.type=T_ERROR;
+				miif.NatICQTX(&rpkt);
+			}
         }
 
         sprintf(rpkt.data,"%u",rpkt.uin);
